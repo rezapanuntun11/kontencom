@@ -13,12 +13,32 @@ jobs:
     - uses: actions/setup-node@v4
       with:
         node-version: lts/*
+
     - name: Install dependencies
       run: npm ci
+
+    # LANGKAH BARU: Mengaktifkan Cache untuk Browser Playwright
+    - name: Cache Playwright Browsers
+      id: cache-playwright
+      uses: actions/cache@v4
+      with:
+        path: ~/.cache/ms-playwright
+        key: playwright-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+        restore-keys: |
+          playwright-${{ runner.os }}-
+
+    # Menginstal dependensi OS sistem operasi Ubuntu (wajib)
+    - name: Install Playwright OS Dependencies
+      run: npx playwright install-deps
+
+    # Menginstal browser HANYA JIKA tidak ada di dalam cache
     - name: Install Playwright Browsers
-      run: npx playwright install --with-deps
+      if: steps.cache-playwright.outputs.cache-hit != 'true'
+      run: npx playwright install
+
     - name: Run Playwright tests
       run: npx playwright test tests/loginkonten.spec.ts
+      
     - uses: actions/upload-artifact@v4
       if: ${{ !cancelled() }}
       with:
